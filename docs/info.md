@@ -11,14 +11,12 @@ INCLUDE IMAGES HERE
 
 ## How it works
 
-Explain how your project works
 Takes input voltages and treats that as input current injection to LIF neuron
 
 ## How to test
 
-Explain how to use your project
-Test
+Test some stuff
 
 ## External hardware
 
-List external hardware used in your project (e.g. PMOD, LED display, etc), if any
+No external hardware used
