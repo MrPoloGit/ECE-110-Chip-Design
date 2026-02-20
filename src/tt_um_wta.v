@@ -40,7 +40,7 @@ module tt_um_wta (
   assign global_inhibit = |spike;
 
   // List all unused inputs to prevent warnings
-  wire _unused = &{ena, uio_in[7:2], 1'b0};
+  wire _unused = &{ena, uio_in[7:2], state0[6:0], state1[6:0], state2[6:0], state3[6:0], 1'b0};
 
   // instantiate lif network
   lif_wta neuron0 (.current(ui_in[0]), .clk(clk), .reset_n(rst_n), .leak(leak), .threshold(threshold), .global_inhibit(global_inhibit), .state(state0), .spike(spike[0]));
