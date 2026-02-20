@@ -52,7 +52,7 @@ module tt_um_wta (
   assign uo_out[3:0] = spike;
 
   // Expose MSB of each membrane state
-  assign uo_out[7:4] = 4'b0000;
+  assign uo_out[7:4] = {state3[7], state2[7], state1[7], state0[7]};
 
   // No bidirectional outputs used
   assign uio_out = 8'b00000000;
