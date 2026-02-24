@@ -3,104 +3,104 @@
 
 import cocotb
 from cocotb.clock import Clock
-from cocotb.triggers import ClockCycles
+from cocotb.triggers import ClockCycles, RisingEdge
 
-def set_threshold(dut, value):
-    # threshold is ui_in[7:4]
-    current_inputs = dut.ui_in.value.integer & 0x0F
-    dut.ui_in.value = (value << 4) | current_inputs
+async def wait_for_spike(dut, max_cycles=300):
+    for i in range(max_cycles):
+        await RisingEdge(dut.clk)
+        if int(dut.uio_out.value) & 0x01:
+            return i
+    return None
 
-def set_currents(dut, value):
-    # currents are ui_in[3:0]
-    threshold_bits = dut.ui_in.value.integer & 0xF0
-    dut.ui_in.value = threshold_bits | (value & 0x0F)
-
-def set_leak(dut, value):
-    # leak is uio_in[1:0]
-    dut.uio_in.value = value & 0x03
 
 @cocotb.test()
 async def test_project(dut):
-    dut._log.info("Start tests")
 
-    clock = Clock(dut.clk, 1, units="ns")
+    dut._log.info("Starting ALIF neuron test")
+
+    clock = Clock(dut.clk, 10, units="ns")
     cocotb.start_soon(clock.start())
 
-    # Reset test -------------------------------------------------------
+    # Test 0: Reset
     dut._log.info("Test 0: Reset")
     dut.rst_n.value = 0
     dut.ui_in.value = 0
     dut.uio_in.value = 0
+    dut.ena.value = 1
+
     await ClockCycles(dut.clk, 10)
     dut.rst_n.value = 1
-    await ClockCycles(dut.clk, 5)
-    assert dut.uo_out.value.integer == 0, "Output not zero after reset"
+    await RisingEdge(dut.clk)
+    await RisingEdge(dut.clk)
 
-    # Test 1: Single neuron integration and spike ----------------------
-    dut._log.info("Test 1: Single neuron spike")
+    assert int(dut.uo_out.value) == 0, "State not zero after reset"
+    dut._log.info("Reset PASS")
 
-    set_threshold(dut, 4)     # threshold = 4
-    set_leak(dut, 0)          # no leak
-    set_currents(dut, 0b0001) # neuron0 active
+    # TEST 1: No spontaneous spike
+    dut._log.info("Test 1: No input, no spike")
+    dut.ui_in.value = 0
 
-    spike_seen = False
-    for i in range(10):
-        await ClockCycles(dut.clk, 1)
-        spikes = dut.uo_out.value.integer & 0x0F
-        if spikes & 0b0001:
-            spike_seen = True
-            break
+    for i in range(50):
+        await RisingEdge(dut.clk)
+        assert (int(dut.uio_out.value) & 0x01) == 0, \
+            f"Spontaneous spike at cycle {i}"
 
-    assert spike_seen, "Neuron 0 did not spike as expected"
+    dut._log.info("PASS")
 
-    # Test 2: Refractory behavior --------------------------------------
-    dut._log.info("Test 2: Refractory period")
+    # TEST 2: Constant input causes spike
+    dut._log.info("Test 2: Spike with constant input")
+
+    dut.ui_in.value = 80  # strong enough current
+
+    spike_cycle = await wait_for_spike(dut, 200)
+    assert spike_cycle is not None, "Neuron did not spike under strong input"
+
+    dut._log.info(f"Spike detected at cycle {spike_cycle}")
+
+    # TEST 3: Reset behavior
+    dut._log.info("Test 3: Reset Behavior")
+    await RisingEdge(dut.clk)
+
+    state_after = int(dut.uo_out.value)
+    dut._log.info(f"State immediately after reset: {state_after}")
+    assert state_after == 0, "State did not reset properly"
+
+    dut._log.info("Reset PASS")
+
+    # TEST 4: Adaptation limits firing rate
+    dut._log.info("Test 4: Adaptation behavior")
 
     spike_count = 0
-    for i in range(20):
-        await ClockCycles(dut.clk, 1)
-        spikes = dut.uo_out.value.integer & 0x0F
-        if spikes & 0b0001:
+    window = 200
+
+    for i in range(window):
+        await RisingEdge(dut.clk)
+        if int(dut.uio_out.value) & 0x01:
             spike_count += 1
 
-    # Should not spike continuously due to refractory
-    assert spike_count <= 2, "Global inhibit not working"
+    dut._log.info(f"Spikes in {window} cycles: {spike_count}")
 
-    # Test 3: Winner-Take-All ------------------------------------------
-    dut._log.info("Test 3: Winner-Take-All competition")
+    assert spike_count > 0, "No spikes observed"
+    assert spike_count < window // 4, \
+        "Firing rate too high — adaptation may be broken"
 
-    # Reset
-    dut.rst_n.value = 0
-    await ClockCycles(dut.clk, 5)
-    dut.rst_n.value = 1
-    await ClockCycles(dut.clk, 5)
-    set_threshold(dut, 3)
-    set_leak(dut, 0)
+    dut._log.info("Adaptation PASS")
 
-    # Activate neuron0 and neuron1
-    set_currents(dut, 0b0011)
-    await ClockCycles(dut.clk, 10)
-    spikes = dut.uo_out.value.integer & 0x0F
+    # TEST 5: Nothing after removing input
+    dut._log.info("Test 5: Nothing after input removal")
 
-    # Only one neuron should spike at a time
-    assert spikes in [0b0001, 0b0010, 0], "WTA violation: multiple spikes detected"
+    dut.ui_in.value = 0
+    await ClockCycles(dut.clk, 20)
 
-    # Test 4: Leak behavior --------------------------------------------
-    dut._log.info("Test 4: Leak decay")
-    dut.rst_n.value = 0
-    await ClockCycles(dut.clk, 5)
-    dut.rst_n.value = 1
-    await ClockCycles(dut.clk, 5)
-    set_threshold(dut, 15)
-    set_leak(dut, 2)  # strong leak
-    set_currents(dut, 0b0001)
-    await ClockCycles(dut.clk, 5)
+    silent_spikes = 0
+    for i in range(80):
+        await RisingEdge(dut.clk)
+        if int(dut.uio_out.value) & 0x01:
+            silent_spikes += 1
 
-    # remove current
-    set_currents(dut, 0)
-    prev_state = dut.uo_out.value.integer >> 4
-    await ClockCycles(dut.clk, 5)
-    new_state = dut.uo_out.value.integer >> 4
-    assert new_state <= prev_state, "Leak not reducing membrane potential"
+    dut._log.info(f"Spikes after removing input: {silent_spikes}")
+    assert silent_spikes == 0, "Neuron kept spiking after input removed"
 
-    dut._log.info("Finished tests")
+    dut._log.info("="*60)
+    dut._log.info("All ALIF tests passed!")
+    dut._log.info("="*60)

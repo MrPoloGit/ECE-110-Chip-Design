@@ -11,12 +11,67 @@ INCLUDE IMAGES HERE
 
 ## How it works
 
-Takes input voltages and treats that as input current injection to LIF neuron
+This project implements an 8-bit **Adaptive Leaky Integrate-and-Fire (ALIF)** neuron in digital logic.
+
+Each clock cycle, the input value on `ui[7:0]` is interpreted as an injected input current. The neuron updates its internal membrane state according to:
+
+```verilog
+assign next_state = current + (state >> 1);
+```
+
+This models:
+
+- Integration of input current  
+- Leakage (the membrane voltage decays by 50% each cycle)
+
+The neuron compares the membrane state against a **dynamic threshold**:
+
+```verilog
+assign threshold = BASE_THRESHOLD + adapt
+```
+
+Where:
+- `BASE_THRESHOLD` is a constant
+- `adapt` is the adaptation variable
+
+If:
+```verilog
+state >= threshold
+```
+then:
+
+- A one-cycle spike pulse is emitted on `uio[0]`
+- The membrane state resets to `RESET_VALUE`
+- The adaptation variable increases by `ADAPT_STEP`
+
+The adaptation variable decays gradually over time:
+
+```verilog
+assign adapt_next = adapt - (adapt >> 3)
+```
+
+This creates the adaptation, were the neuron fires quickly at first, then firing slows under sustained stimulation, eventually stabilizes to a steady firing rate. This behavior is meant to mimic biological neurons that become temporarily less excitable after each spike.
 
 ## How to test
 
-Test some stuff
+Using the provided cocotb testbench, so run:
+
+```bash
+make -B
+```
+
+It has 5 tests
+The testbench includes 6 automated tests that verify:
+0. Reset
+1. No spontaneous spike
+2. Constant input causes spike
+3. Reset behavior after spike
+4. Adaptation limits firing rate
+5. Nothing after removing input
 
 ## External hardware
 
-No external hardware used
+The design only needs:
+- Clock
+- Reset
+- 8-bit input current
