@@ -13,6 +13,19 @@ INCLUDE IMAGES HERE
 
 This project implements an 8-bit **Adaptive Leaky Integrate-and-Fire (ALIF)** neuron in digital logic.
 
+```
+           +----------------+
+Input --->| Integrate + Leak |----> Compare ---> Spike
+           +----------------+        |
+                                     |
+                                  Dynamic
+                                  Threshold
+                                      ^
+                                      |
+                                 Adaptation
+                                 (decay + spike boost)
+```
+
 Each clock cycle, the input value on `ui[7:0]` is interpreted as an injected input current. The neuron updates its internal membrane state according to:
 
 ```verilog
@@ -23,6 +36,7 @@ This models:
 
 - Integration of input current  
 - Leakage (the membrane voltage decays by 50% each cycle)
+- Using 50% as it maps easily to hardware
 
 The neuron compares the membrane state against a **dynamic threshold**:
 
@@ -50,7 +64,12 @@ The adaptation variable decays gradually over time:
 assign adapt_next = adapt - (adapt >> 3)
 ```
 
-This creates the adaptation, were the neuron fires quickly at first, then firing slows under sustained stimulation, eventually stabilizes to a steady firing rate. This behavior is meant to mimic biological neurons that become temporarily less excitable after each spike.
+This models:
+- Adapation decay
+- Avoids multipliers
+- Provides a slow decay
+
+This creates the adaptation, where the neuron fires quickly at first, then firing slows under sustained stimulation, eventually stabilizes to a steady firing rate. This behavior is meant to mimic biological neurons that become temporarily less excitable after each spike.
 
 ## How to test
 
@@ -68,6 +87,8 @@ The testbench includes 6 automated tests that verify:
 3. Reset behavior after spike
 4. Adaptation limits firing rate
 5. Nothing after removing input
+
+![Alt text](Waveform.png)
 
 ## External hardware
 

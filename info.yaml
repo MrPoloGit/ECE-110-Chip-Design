@@ -24,14 +24,14 @@ project:
 # This section is for the datasheet/website. Use descriptive names (e.g., RX, TX, MOSI, SCL, SEG_A, etc.).
 pinout:
   # Inputs
-  ui[0]: "Input curent bit [0]"
-  ui[1]: "Input curent bit [1]"
-  ui[2]: "Input curent bit [2]"
-  ui[3]: "Input curent bit [3]"
-  ui[4]: "Input curent bit [4]"
-  ui[5]: "Input curent bit [5]"
-  ui[6]: "Input curent bit [6]"
-  ui[7]: "Input curent bit [7]"
+  ui[0]: "Input current bit [0]"
+  ui[1]: "Input current bit [1]"
+  ui[2]: "Input current bit [2]"
+  ui[3]: "Input current bit [3]"
+  ui[4]: "Input current bit [4]"
+  ui[5]: "Input current bit [5]"
+  ui[6]: "Input current bit [6]"
+  ui[7]: "Input current bit [7]"
 
   # Outputs
   uo[0]: "State variable bit [0]"

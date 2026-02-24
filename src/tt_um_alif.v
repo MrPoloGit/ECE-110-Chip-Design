@@ -21,18 +21,18 @@ module tt_um_alif (
   // uo_out[7:0]  = state output
   // uio_in[7:0]  = unused
   // uio_out[0]   = spike output (high for one cycle when V >= 30)
-  // uio_out[7:1] = driven 0
-  // uio_oe[7:0]  = 1
+  // uio_out[7:1] = all 0s
+  // uio_oe[7:0]  = all 1s
   // -------------------------------------------------------
 
   assign uio_out[7:1] = 7'b0;
-  assign uio_oe       = 1;
+  assign uio_oe       = 8'hFF;
 
   wire _unused = &{ena, uio_in, 1'b0};
 
-  localparam BASE_THRESHOLD = 8'd120;
-  localparam ADAPT_STEP = 8'd20;
-  localparam RESET_VALUE = 8'd0;
+  localparam BASE_THRESHOLD = 8'd120; // Works well
+  localparam ADAPT_STEP = 8'd20; // Works well
+  localparam RESET_VALUE = 8'd0; // Works well
 
   alif #(
       .BASE_THRESHOLD(BASE_THRESHOLD),
