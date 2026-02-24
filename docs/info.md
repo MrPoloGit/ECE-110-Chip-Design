@@ -16,8 +16,8 @@ This project implements an 8-bit **Adaptive Leaky Integrate-and-Fire (ALIF)** ne
 ```
            +----------------+
 Input --->| Integrate + Leak |----> Compare ---> Spike
-           +----------------+        |
-                                     |
+           +----------------+         ^
+                                      |
                                   Dynamic
                                   Threshold
                                       ^
