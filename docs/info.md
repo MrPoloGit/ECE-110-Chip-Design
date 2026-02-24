@@ -88,7 +88,7 @@ The testbench includes 6 automated tests that verify:
 4. Adaptation limits firing rate
 5. Nothing after removing input
 
-![Alt text](Waveform.png)
+![Waveform of tests](Waveform.png)
 
 ## External hardware
 
