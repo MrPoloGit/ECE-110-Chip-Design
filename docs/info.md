@@ -38,10 +38,11 @@ This models:
 - Leakage (the membrane voltage decays by 50% each cycle)
 - Using 50% as it maps easily to hardware
 
-The neuron compares the membrane state against a **dynamic threshold**:
+The neuron compares the membrane state against a **dynamic threshold**, but first calculates the full threshold and checks if the carry is 1, and then saturates:
 
 ```verilog
-assign threshold = BASE_THRESHOLD + adapt
+assign carry_threshold = BASE_THRESHOLD + adapt;
+assign threshold = (carry_threshold[8]) ? 8'd255 : BASE_THRESHOLD + adapt;
 ```
 
 Where:
@@ -81,6 +82,7 @@ make -B
 
 It has 5 tests
 The testbench includes 6 automated tests that verify:
+
 0. Reset
 1. No spontaneous spike
 2. Constant input causes spike

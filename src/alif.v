@@ -16,6 +16,7 @@ module alif #(
     wire [7:0] next_adapt;
     reg  [7:0] adapt;       // adaptation variable
     wire [7:0] threshold;   // dynamic threshold
+    wire [8:0] carry_threshold;
 
     // Sequential logic
     always @(posedge clk) begin
@@ -40,7 +41,8 @@ module alif #(
     assign next_state = current + (state >> 1);
 
     // Threshold = base + adapt
-    assign threshold = BASE_THRESHOLD + adapt;
+    assign carry_threshold = BASE_THRESHOLD + adapt;
+    assign threshold = (carry_threshold[8]) ? 8'd255 : BASE_THRESHOLD + adapt;
 
     // Spike Condition
     assign spike = (state >= threshold);
